@@ -4,6 +4,7 @@ import java.awt.event.ActionListener;
 
 import javax.swing.JButton;
 import javax.swing.JColorChooser;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
@@ -20,6 +21,7 @@ public class TextEditor extends JFrame implements ActionListener{
     JLabel fontLabel;
     JSpinner fontSizeSpinner;
     JButton fontColorButton;
+    JComboBox<String> fontBox;
 
     TextEditor(){
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -55,9 +57,15 @@ public class TextEditor extends JFrame implements ActionListener{
         fontColorButton = new JButton("Color");
         fontColorButton.addActionListener(this);
 
+        String[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+        fontBox = new JComboBox<>(fonts);
+        fontBox.addActionListener(this);
+        fontBox.setSelectedItem("Monospaced");
+
         this.add(fontLabel);
         this.add(fontSizeSpinner);
         this.add(fontColorButton);
+        this.add(fontBox);
         this.add(scrollPane);
         this.setVisible(true);
     }
@@ -69,6 +77,10 @@ public class TextEditor extends JFrame implements ActionListener{
             Color color = JColorChooser.showDialog(null, "Choose a color", Color.black);
 
             textArea.setForeground(color);
+        }
+
+        if(e.getSource() == fontBox){
+            textArea.setFont(new Font((String)fontBox.getSelectedItem(), Font.PLAIN,textArea.getFont().getSize()));
         }
     }
 }
