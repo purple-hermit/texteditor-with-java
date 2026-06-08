@@ -40,6 +40,7 @@ public class TextEditor extends JFrame implements ActionListener {
     JMenu fileMenu;
     JMenuItem openItem;
     JMenuItem saveItem;
+    JMenuItem darkModeItem;
     JMenuItem exitItem;
 
     TextEditor() {
@@ -83,19 +84,21 @@ public class TextEditor extends JFrame implements ActionListener {
         fontBox.setSelectedItem("Monospaced");
 
         // Menu-bar
-
         menuBar = new JMenuBar();
         fileMenu = new JMenu("File");
         openItem = new JMenuItem("Open");
         saveItem = new JMenuItem("Save");
+        darkModeItem = new JMenuItem("Toggle Dark Mode");
         exitItem = new JMenuItem("Exit");
-
+        
         openItem.addActionListener(this);
         saveItem.addActionListener(this);
+        darkModeItem.addActionListener(this);
         exitItem.addActionListener(this);
 
         fileMenu.add(openItem);
         fileMenu.add(saveItem);
+        fileMenu.add(darkModeItem);
         fileMenu.add(exitItem);
         menuBar.add(fileMenu);
 
@@ -161,6 +164,23 @@ public class TextEditor extends JFrame implements ActionListener {
                     e1.printStackTrace();
                 }
             }
+        }
+
+        if(e.getSource() == darkModeItem){
+            Color darkBackground = new Color(43,43,43);
+            Color lightText = new Color(169,183,198);
+
+            if(textArea.getBackground().equals(darkBackground)){
+                textArea.setBackground(Color.WHITE);
+                textArea.setForeground(Color.BLACK);
+                textArea.setCaretColor(Color.BLACK);
+            }
+            else{
+                textArea.setBackground(darkBackground);
+                textArea.setForeground(lightText);
+                textArea.setCaretColor(Color.WHITE);
+            }
+
         }
 
         if (e.getSource() == exitItem) {
