@@ -1,3 +1,4 @@
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -18,8 +19,10 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.event.ChangeEvent;
@@ -30,7 +33,7 @@ public class TextEditor extends JFrame implements ActionListener {
     FileManager fileManager = new FileManager();
 
     JTextArea textArea;
-    JScrollPane scrollPane;
+    JTabbedPane tabbedPane;
     JLabel fontLabel;
     JSpinner fontSizeSpinner;
     JButton fontColorButton;
@@ -46,33 +49,26 @@ public class TextEditor extends JFrame implements ActionListener {
     TextEditor() {
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setTitle("Notepad");
-        this.setSize(640, 480);
-        this.setLayout(new FlowLayout());
+        this.setSize(800, 600);
+
+        this.setLayout(new BorderLayout());
         this.setLocationRelativeTo(null);
 
-        textArea = new JTextArea();
-        textArea.setCaretColor(Color.black);
-        textArea.setFont(new Font("Monospaced", Font.PLAIN, 15));
-        textArea.setLineWrap(true);
-        textArea.setWrapStyleWord(true);
-
-        scrollPane = new JScrollPane(textArea);
-        scrollPane.setPreferredSize(new Dimension(600, 450));
-        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-
+        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        
         fontLabel = new JLabel("Font: ");
 
         fontSizeSpinner = new JSpinner();
         fontSizeSpinner.setPreferredSize(new Dimension(50, 25));
         fontSizeSpinner.setValue(20);
         fontSizeSpinner.addChangeListener(new ChangeListener() {
-
             @Override
-            public void stateChanged(ChangeEvent e) {
-                textArea.setFont(
-                        new Font(textArea.getFont().getFamily(), Font.PLAIN, (int) fontSizeSpinner.getValue()));
+            public void stateChanged(ChangeEvent e){
+                JTextArea currentTextArea = getCurrentTextArea();
+                if(currentTextArea != null){
+                    currentTextArea.setFont(new Font(currentTextArea.getFont().getFamily(), Font.PLAIN, (int) fontSizeSpinner.getValue()));
+                }
             }
-
         });
 
         fontColorButton = new JButton("Color");
@@ -80,8 +76,18 @@ public class TextEditor extends JFrame implements ActionListener {
 
         String[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
         fontBox = new JComboBox<>(fonts);
-        fontBox.addActionListener(this);
         fontBox.setSelectedItem("Monospaced");
+        fontBox.addActionListener(this);
+
+        // Control Panel
+        controlPanel.add(fontLabel);
+        controlPanel.add(fontSizeSpinner);
+        controlPanel.add(fontColorButton);
+        controlPanel.add(fontBox);
+
+        tabbedPane = new JTabbedPane();
+
+        addNewTab("Untitled", "");
 
         // Menu-bar
         menuBar = new JMenuBar();
@@ -101,90 +107,120 @@ public class TextEditor extends JFrame implements ActionListener {
         fileMenu.add(darkModeItem);
         fileMenu.add(exitItem);
         menuBar.add(fileMenu);
-
-        // Menu-bar
         this.setJMenuBar(menuBar);
-        this.add(fontLabel);
-        this.add(fontSizeSpinner);
-        this.add(fontColorButton);
-        this.add(fontBox);
-        this.add(scrollPane);
+
+
+        this.add(controlPanel, BorderLayout.NORTH);
+        this.add(tabbedPane, BorderLayout.CENTER);
+
         this.setVisible(true);
     }
 
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == fontColorButton) {
+private void addNewTab(String title, String content){
+    JTextArea newTextArea = new JTextArea(content);
+    newTextArea.setCaretColor(Color.BLACK);
+    newTextArea.setFont(new Font("Monospaced", Font.PLAIN, (int) fontSizeSpinner.getValue()));
+    newTextArea.setLineWrap(true);
+    newTextArea.setWrapStyleWord(true);
 
-            Color color = JColorChooser.showDialog(null, "Choose a color", Color.black);
+    JScrollPane scrollPane = new JScrollPane(newTextArea);
+    scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 
-            textArea.setForeground(color);
-        }
+    tabbedPane.addTab(title, scrollPane);
+    tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 1);
+}
 
-        if (e.getSource() == fontBox) {
-            textArea.setFont(new Font((String) fontBox.getSelectedItem(), Font.PLAIN, textArea.getFont().getSize()));
-        }
 
-        if (e.getSource() == openItem) {
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setCurrentDirectory(new File("."));
-            FileNameExtensionFilter filter = new FileNameExtensionFilter("Text files", "txt");
-            fileChooser.setFileFilter(filter);
+private JTextArea getCurrentTextArea(){
+    int selectedIndex = tabbedPane.getSelectedIndex();
+    if (selectedIndex != -1){
+        JScrollPane scrollPane = (JScrollPane) tabbedPane.getComponentAt(selectedIndex);
+        return (JTextArea) scrollPane.getViewport().getView();
+    }
+    return null;
+}
 
-            int response = fileChooser.showOpenDialog(null);
+@Override
+public void actionPerformed(ActionEvent e) {
+    JFileChooser fileChooser = new JFileChooser();
+    fileChooser.setCurrentDirectory(new File("."));
+    
+    // Grab the text area for the active tab
+    JTextArea activeTextArea = getCurrentTextArea();
 
-            if (response == JFileChooser.APPROVE_OPTION) {
-                File file = fileChooser.getSelectedFile();
-                try {
-                    String fileContent = fileManager.openFile(file);
-                    textArea.setText("");
-                    textArea.setText(fileContent);
-                } catch (FileNotFoundException e1) {
-                    JOptionPane.showMessageDialog(null, "Error: Could not open the file!", "File Error",
-                            JOptionPane.ERROR_MESSAGE);
-                    e1.printStackTrace();
-                }
+    if (e.getSource() == fontColorButton && activeTextArea != null) {
+        Color color = JColorChooser.showDialog(this, "Choose a color", Color.BLACK);
+        activeTextArea.setForeground(color);
+    }
+
+    if (e.getSource() == fontBox && activeTextArea != null) {
+        activeTextArea.setFont(new Font((String) fontBox.getSelectedItem(), Font.PLAIN, activeTextArea.getFont().getSize()));
+    }
+
+    if (e.getSource() == openItem) {
+        FileNameExtensionFilter filter = new FileNameExtensionFilter("Text files", "txt");
+        fileChooser.setFileFilter(filter);
+
+        int response = fileChooser.showOpenDialog(this);
+        if (response == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            try {
+                String fileContent = fileManager.openFile(file);
+                
+                // INSTEAD of overwriting: Open a brand new tab displaying this file!
+                addNewTab(file.getName(), fileContent);
+                
+            } catch (FileNotFoundException e1) {
+                JOptionPane.showMessageDialog(this, "Error: Could not open the file!", "File Error", JOptionPane.ERROR_MESSAGE);
+                e1.printStackTrace();
             }
-        }
-
-        if (e.getSource() == saveItem) {
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setCurrentDirectory(new File("."));
-
-            int response = fileChooser.showSaveDialog(null);
-
-            if (response == JFileChooser.APPROVE_OPTION) {
-                File file = fileChooser.getSelectedFile();
-
-                try {
-                    fileManager.saveFile(file, textArea.getText());
-                } catch (FileNotFoundException e1) {
-                    JOptionPane.showMessageDialog(null, "Error: Could not save the file!", "File Error",
-                            JOptionPane.ERROR_MESSAGE);
-                    e1.printStackTrace();
-                }
-            }
-        }
-
-        if(e.getSource() == darkModeItem){
-            Color darkBackground = new Color(43,43,43);
-            Color lightText = new Color(169,183,198);
-
-            if(textArea.getBackground().equals(darkBackground)){
-                textArea.setBackground(Color.WHITE);
-                textArea.setForeground(Color.BLACK);
-                textArea.setCaretColor(Color.BLACK);
-            }
-            else{
-                textArea.setBackground(darkBackground);
-                textArea.setForeground(lightText);
-                textArea.setCaretColor(Color.WHITE);
-            }
-
-        }
-
-        if (e.getSource() == exitItem) {
-            System.exit(0);
         }
     }
+
+    if (e.getSource() == saveItem && activeTextArea != null) {
+        int response = fileChooser.showSaveDialog(this);
+        if (response == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            try {
+                fileManager.saveFile(file, activeTextArea.getText());
+                
+                // Dynamically update the tab heading to the newly saved name
+                tabbedPane.setTitleAt(tabbedPane.getSelectedIndex(), file.getName());
+            } catch (FileNotFoundException e1) {
+                JOptionPane.showMessageDialog(this, "Error: Could not save the file!", "File Error", JOptionPane.ERROR_MESSAGE);
+                e1.printStackTrace();
+            }
+        }
+    }
+
+    if (e.getSource() == darkModeItem) {
+    Color darkBackground = new Color(43, 43, 43);
+    Color lightText = new Color(169, 183, 198);
+    
+    // Check the active tab to see if we are currently in dark mode
+    JTextArea activeArea = getCurrentTextArea();
+    boolean isCurrentlyDark = activeArea != null && activeArea.getBackground().equals(darkBackground);
+
+    // Loop through every single open tab and update its colors
+    for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+        JScrollPane scrollPane = (JScrollPane) tabbedPane.getComponentAt(i);
+        JTextArea area = (JTextArea) scrollPane.getViewport().getView();
+        
+        if (isCurrentlyDark) {
+            // Switch back to Light Mode
+            area.setBackground(Color.WHITE);
+            area.setForeground(Color.BLACK);
+            area.setCaretColor(Color.BLACK);
+        } else {
+            // Switch to Dark Mode
+            area.setBackground(darkBackground);
+            area.setForeground(lightText);
+            area.setCaretColor(Color.WHITE);
+        }
+    }
+}
+    if (e.getSource() == exitItem) {
+        System.exit(0);
+    }
+}
 }
