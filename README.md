@@ -2,8 +2,6 @@
 
 A modular, multi-tabbed desktop text editor built entirely from scratch using Java Swing and AWT. 
 
-Built using Java (JDK 21), Java Swing & AWT
-
 ## Features
 
 * **Multi-Tabbed Workspace:** Open and edit multiple files simultaneously within a single window utilizing `JTabbedPane`.
